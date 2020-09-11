@@ -1,19 +1,7 @@
 config ZRAM
 	tristate "Compressed RAM block device support"
-<<<<<<< HEAD
-	#ifdef VENDOR_EDIT
-	# Wen.Luo@PSW.BSP.Kernel.Driver,2018/12/10, Add for enable crypto lz4 compress for zram lz4
-	depends on BLOCK && SYSFS && ZSMALLOC
-	select LZO_COMPRESS
-	select LZO_DECOMPRESS
-	#else
-	#depends on BLOCK && SYSFS && ZSMALLOC && CRYPTO
-	#select CRYPTO_LZO
-	#endif
-=======
 	depends on BLOCK && SYSFS && ZSMALLOC && CRYPTO
 	depends on CRYPTO_LZO || CRYPTO_ZSTD || CRYPTO_LZ4 || CRYPTO_LZ4HC || CRYPTO_LZ4KD || CRYPTO_842
->>>>>>> 7c2df698bd7a (drivers/block/zram: Optimize the determination of zram default algorithm, use lz4kd by default, enable more algorithms)
 	default n
 	help
 	  Creates virtual block devices called /dev/zramX (X = 0, 1, ...).
@@ -92,7 +80,6 @@ config ZRAM_MEMORY_TRACKING
 	  /sys/kernel/debug/zram/zramX/block_state.
 
 	  See Documentation/blockdev/zram.txt for more information.
-<<<<<<< HEAD
 
 #ifdef VENDOR_EDIT
 # Wen.Luo@PSW.BSP.Kernel.Driver,2018/12/10, Add for enable crypto lz4 compress for zram lz4
@@ -106,5 +93,3 @@ config ZRAM_LZ4_COMPRESS
 	  This option enables LZ4 compression algorithm support. Compression
 	  algorithm can be changed using `comp_algorithm' device attribute.
 #endif
-=======
->>>>>>> 7c2df698bd7a (drivers/block/zram: Optimize the determination of zram default algorithm, use lz4kd by default, enable more algorithms)
