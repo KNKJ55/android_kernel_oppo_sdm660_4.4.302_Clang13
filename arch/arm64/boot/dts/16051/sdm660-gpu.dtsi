@@ -120,7 +120,7 @@
 
 		/* Cx ipeak limit supprt */
 		qcom,gpu-cx-ipeak = <&cx_ipeak_lm 1>;
-		qcom,gpu-cx-ipeak-clk = <750000000>;
+		qcom,gpu-cx-ipeak-clk = <950000000>;
 
 		/* CPU latency parameter */
 		qcom,pm-qos-active-latency = <518>;
@@ -186,7 +186,7 @@
 				/* TURBO */
 				qcom,gpu-pwrlevel@0 {
 					reg = <0>;
-					qcom,gpu-freq = <750000000>;
+					qcom,gpu-freq = <950000000>;
 					qcom,bus-freq = <13>;
 					qcom,bus-min = <12>;
 					qcom,bus-max = <13>;
@@ -276,7 +276,7 @@
 				/* TURBO */
 				qcom,gpu-pwrlevel@0 {
 					reg = <0>;
-					qcom,gpu-freq = <750000000>;
+					qcom,gpu-freq = <950000000>;
 					qcom,bus-freq = <13>;
 					qcom,bus-min = <12>;
 					qcom,bus-max = <13>;
@@ -366,7 +366,7 @@
 				/* TURBO */
 				qcom,gpu-pwrlevel@0 {
 					reg = <0>;
-					qcom,gpu-freq = <700000000>;
+					qcom,gpu-freq = <950000000>;
 					qcom,bus-freq = <13>;
 					qcom,bus-min = <12>;
 					qcom,bus-max = <13>;
