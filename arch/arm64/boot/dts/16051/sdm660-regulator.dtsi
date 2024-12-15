@@ -597,7 +597,7 @@
 			gfx_vreg_corner: regulator {
 				regulator-name = "gfx_corner";
 				regulator-min-microvolt = <1>;
-				regulator-max-microvolt = <8>;
+				regulator-max-microvolt = <9>;
 
 				qcom,cpr-fuse-corners = <6>;
 				qcom,cpr-fuse-combos = <8>;
@@ -723,7 +723,7 @@
 			apc0_pwrcl_vreg: regulator {
 				regulator-name = "apc0_pwrcl_corner";
 				regulator-min-microvolt = <1>;
-				regulator-max-microvolt = <8>;
+				regulator-max-microvolt = <9>;
 
 				qcom,cpr-fuse-corners = <5>;
 				qcom,cpr-fuse-combos = <32>;
@@ -862,7 +862,7 @@
 			apc1_perfcl_vreg: regulator {
 				regulator-name = "apc1_perfcl_corner";
 				regulator-min-microvolt = <1>;
-				regulator-max-microvolt = <7>;
+				regulator-max-microvolt = <9>;
 
 				qcom,cpr-fuse-corners = <5>;
 				qcom,cpr-fuse-combos = <32>;
@@ -906,12 +906,12 @@
 					/* Speed bin 0 */
 					<300000000  1113600000 1401600000
 					 1747200000 1958400000 2150400000
-					 2749600000>,
+					 3229600000>,
 
 					/* Speed bin 1 */
 					<300000000  1113600000 1401600000
 					 1747200000 1958400000 2150400000
-					 2749600000>,
+					 3229600000>,
 
 					/* Speed bin 3 */
 					<300000000  1113600000 1401600000
