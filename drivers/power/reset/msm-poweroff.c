@@ -361,11 +361,23 @@ static void msm_restart_prepare(const char *cmd)
 #endif /* VENDOR_EDIT */
 
 	/* Hard reset the PMIC unless memory contents must be maintained. */
-	if (need_warm_reset) {
+	if (ture) {
 		qpnp_pon_system_pwr_off(PON_POWER_OFF_WARM_RESET);
 	} else {
 		qpnp_pon_system_pwr_off(PON_POWER_OFF_HARD_RESET);
 	}
+	
+	// Force Reboot Recovery
+	/*
+	} else if (!strncmp(cmd, "recovery", 8)) {
+			qpnp_pon_set_restart_reason(
+				PON_RESTART_REASON_RECOVERY);
+			__raw_writel(0x77665502, restart_reason);
+	*/
+	
+	qpnp_pon_set_restart_reason(
+		PON_RESTART_REASON_RECOVERY);
+	__raw_writel(0x77665502, restart_reason);
 
 #ifndef VENDOR_EDIT
 /* OPPO 2013.07.09 hewei modify begin for restart mode*/

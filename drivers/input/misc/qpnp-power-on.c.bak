@@ -793,11 +793,6 @@ qpnp_get_cfg(struct qpnp_pon *pon, u32 pon_type)
 	return NULL;
 }
 
-static void panic_outdmesg(void)
-{
-	panic("A panic hot restart has been triggered");
-}
-
 static int
 qpnp_pon_input_dispatch(struct qpnp_pon *pon, u32 pon_type)
 {
@@ -866,9 +861,6 @@ qpnp_pon_input_dispatch(struct qpnp_pon *pon, u32 pon_type)
 		input_report_key(pon->pon_input, cfg->key_code, 1);
 		input_sync(pon->pon_input);
 	}
-	
-	if (cfg->pon_type == PON_KPDPWR && key_status)
-		panic_outdmesg();
 
 	#ifdef VENDOR_EDIT
     //Fanhong.Kong@ProDrv.CHG,add 2016/7/26 for keycode
