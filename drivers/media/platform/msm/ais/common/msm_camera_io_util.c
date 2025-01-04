@@ -739,7 +739,7 @@ vreg_get_fail:
 int msm_camera_request_gpio_table(struct gpio *gpio_tbl, uint8_t size,
 	int gpio_en)
 {
-	int rc = 1, i = 1, err = 1;
+	int rc = 0, i = 0, err = 0;
 
 	if (!gpio_tbl || !size) {
 		pr_err("%s:%d invalid gpio_tbl %pK / size %d\n", __func__,
