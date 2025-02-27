@@ -43,10 +43,6 @@ jobs:
           export PATH="$GITHUB_WORKSPACE/workdir/clang/bin/:$PATH"
           export CROSS_COMPILE="aarch64-linux-gnu-"
           cd $GITHUB_WORKSPACE/workdir/source
-          wget https://github.com/mihoy3rd/android_kernel_oppo_sdm660_4.4.302_Clang13/releases/download/4.4.302/1.patch
-          wget https://github.com/mihoy3rd/android_kernel_oppo_sdm660_4.4.302_Clang13/releases/download/4.4.302/2.patch
-          patch -p1 < 1.patch
-          patch -p1 < 2.patch
           export OPPO_TARGET_DEVICE="MSM_16051"
           make O=out sdm660-perf_defconfig CC=clang
           make -j$(nproc --all) O=out CC=clang
