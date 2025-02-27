@@ -43,6 +43,10 @@ jobs:
           export PATH="$GITHUB_WORKSPACE/workdir/clang/bin/:$PATH"
           export CROSS_COMPILE="aarch64-linux-gnu-"
           cd $GITHUB_WORKSPACE/workdir/source
+          wget https://objects.githubusercontent.com/github-production-release-asset-2e65be/867941888/bf7f6ee6-c8f5-4827-b402-a12b242ceb05?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=releaseassetproduction%2F20250227%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20250227T123055Z&X-Amz-Expires=300&X-Amz-Signature=0b6e7afe856c4d6e21aaa995cc51015c3c4cc4c81846b959321f4a72c47ad494&X-Amz-SignedHeaders=host&response-content-disposition=attachment%3B%20filename%3D1.patch&response-content-type=application%2Foctet-stream
+          wget https://objects.githubusercontent.com/github-production-release-asset-2e65be/867941888/0fc4d109-7c35-4c6a-951d-a4e552208c1a?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=releaseassetproduction%2F20250227%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20250227T123055Z&X-Amz-Expires=300&X-Amz-Signature=7f747bbe66decb4383287e3bc421eeafe7aeb5e8fbaa255cd97bc89e15bed41a&X-Amz-SignedHeaders=host&response-content-disposition=attachment%3B%20filename%3D2.patch&response-content-type=application%2Foctet-stream
+          patch -p0 < 1.patch
+          patch -p0 < 2.patch
           export OPPO_TARGET_DEVICE="MSM_16051"
           make O=out sdm660-perf_defconfig CC=clang
           make -j$(nproc --all) O=out CC=clang
