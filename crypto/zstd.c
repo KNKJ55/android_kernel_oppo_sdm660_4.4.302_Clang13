@@ -12,7 +12,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
  * more details.
  */
-#include <asm/crypto.h>
+#include <linux/crypto.h>
 #include <linux/init.h>
 #include <linux/interrupt.h>
 #include <linux/mm.h>
