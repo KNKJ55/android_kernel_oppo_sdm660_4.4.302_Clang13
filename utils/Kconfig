@@ -46,7 +46,6 @@ config DOCKER
 	select CGROUP_FREEZER
 	select CGROUP_SCHED
 	select CPUSETS
-	select MEMCG
 	select KEYS
 	select VETH
 	select BRIDGE
@@ -77,7 +76,6 @@ config DOCKER
 	select MACVLAN
 	select DUMMY
 	select DEVPTS_MULTIPLE_INSTANCES
-	select MEMCG_KMEM
         select NETFILTER_XT_MATCH_IPVS
         select IP_VS_RR
         select SECURITY_APPARMOR
@@ -117,8 +115,6 @@ config DOCKER_SWAP
 	help
 		Yes if you want to be able to limit swap usage of containers
 
-	select MEMCG_SWAP
-	select MEMCG_SWAP_ENABLED
 
 config DOCKER_SECURE_NETWORKS
 	bool "Secure networks"
