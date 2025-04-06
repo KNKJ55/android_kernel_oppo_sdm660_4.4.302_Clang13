@@ -24,6 +24,7 @@
 #include <soc/qcom/scm.h>
 #include "governor.h"
 
+extern int devfreq_get_freq_level(struct devfreq *devfreq, unsigned long freq);
 static DEFINE_SPINLOCK(tz_lock);
 static DEFINE_SPINLOCK(sample_lock);
 static DEFINE_SPINLOCK(suspend_lock);
