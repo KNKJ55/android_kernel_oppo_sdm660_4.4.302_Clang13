@@ -338,9 +338,7 @@ static int tz_init(struct devfreq_msm_adreno_tz_data *priv,
 	return ret;
 }
 
-static int tz_get_target_freq(struct devfreq *devfreq, unsigned long *freq,
-								u32 *flag)
-static inline int devfreq_get_freq_level(struct devfreq *devfreq,
+static int devfreq_get_freq_level(struct devfreq *devfreq,
 	unsigned long freq)
 {
 	int lev;
@@ -351,8 +349,6 @@ static inline int devfreq_get_freq_level(struct devfreq *devfreq,
 
 	return -EINVAL;
 }
-
-//static int tz_get_target_freq(struct devfreq *devfreq, unsigned long *freq)
 
 #ifdef CONFIG_SIMPLE_GPU_ALGORITHM
 extern int simple_gpu_active;
