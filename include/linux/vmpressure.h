@@ -21,7 +21,9 @@ struct vmpressure {
 	/* Have to grab the lock on events traversal or modifications. */
 	struct mutex events_lock;
 
-	struct work_struct work;
+	struct work_struct work;	
+	atomic_long_t users;
+	rwlock_t users_lock;
 };
 
 struct mem_cgroup;
