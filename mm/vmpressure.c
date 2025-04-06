@@ -258,13 +258,139 @@ static unsigned long calculate_vmpressure_win(void)
 	return int_sqrt(x);
 }
 
-void vmpressure_memcg(gfp_t gfp, struct mem_cgroup *memcg,
-		unsigned long scanned, unsigned long reclaimed)
+static void vmpressure_memcg(gfp_t gfp, struct mem_cgroup *memcg, bool critical,
+			     unsigned long scanned, unsigned long reclaimed)
+{
+	struct vmpressure *vmpr = memcg_to_vmpressure(memcg);
+	unsigned long flags;
+
+	BUG_ON(!vmpr);
+
+	/*
+	 * If we got here with no pages scanned, then that is an indicator
+	 * that reclaimer was unable to find any shrinkable LRUs at the
+	 * current scanning depth. But it does not mean that we should
+	 * report the critical pressure, yet. If the scanning priority
+	 * (scanning depth) goes too high (deep), we will be notified
+	 * through vmpressure_prio(). But so far, keep calm.
+	 */
+	if (critical)
+		scanned = calculate_vmpressure_win();
+	else if (!scanned)
+		return;
+
+	spin_lock_irqsave(&vmpr->sr_lock, flags);
+	vmpr->scanned += scanned;
+	vmpr->reclaimed += reclaimed;
+	scanned = vmpr->scanned;
+	spin_unlock_irqrestore(&vmpr->sr_lock, flags);
+
+	if (!critical && scanned < calculate_vmpressure_win())
+		return;
+	schedule_work(&vmpr->work);
+}
+
+bool vmpressure_inc_users(int order)
 {
 	struct vmpressure *vmpr = &global_vmpressure;
 	unsigned long flags;
 
-	BUG_ON(!vmpr);
+	if (order > PAGE_ALLOC_COSTLY_ORDER)
+		return false;
+
+	write_lock_irqsave(&vmpr->users_lock, flags);
+	if (atomic_long_inc_return_relaxed(&vmpr->users) == 1) {
+		/* Clear out stale vmpressure data when reclaim begins */
+		spin_lock(&vmpr->sr_lock);
+		vmpr->scanned = 0;
+		vmpr->reclaimed = 0;
+		vmpr->stall = 0;
+		spin_unlock(&vmpr->sr_lock);
+	}
+	write_unlock_irqrestore(&vmpr->users_lock, flags);
+
+	return true;
+}
+
+void vmpressure_dec_users(void)
+{
+	struct vmpressure *vmpr = &global_vmpressure;
+
+	/* Decrement the vmpressure user count with release semantics */
+	smp_mb__before_atomic();
+	atomic_long_dec(&vmpr->users);
+}
+
+static void vmpressure_global(gfp_t gfp, unsigned long scanned, bool critical,
+			      unsigned long reclaimed)
+{
+	struct vmpressure *vmpr = &global_vmpressure;
+	unsigned long pressure;
+	unsigned long stall;
+	unsigned long flags;
+
+	if (critical)
+		scanned = calculate_vmpressure_win();
+
+	spin_lock_irqsave(&vmpr->sr_lock, flags);
+	if (scanned) {
+		vmpr->scanned += scanned;
+		vmpr->reclaimed += reclaimed;
+
+		if (!current_is_kswapd())
+			vmpr->stall += scanned;
+
+		stall = vmpr->stall;
+		scanned = vmpr->scanned;
+		reclaimed = vmpr->reclaimed;
+
+		if (!critical && scanned < calculate_vmpressure_win()) {
+			spin_unlock_irqrestore(&vmpr->sr_lock, flags);
+			return;
+		}
+	}
+	vmpr->scanned = 0;
+	vmpr->reclaimed = 0;
+	vmpr->stall = 0;
+	spin_unlock_irqrestore(&vmpr->sr_lock, flags);
+
+	if (scanned) {
+		pressure = vmpressure_calc_pressure(scanned, reclaimed);
+		pressure = vmpressure_account_stall(pressure, stall, scanned);
+	} else {
+		pressure = 100;
+	}
+	vmpressure_notify(pressure);
+}
+
+static void __vmpressure(gfp_t gfp, struct mem_cgroup *memcg, bool critical,
+			 unsigned long scanned, unsigned long reclaimed)
+{
+	if (!memcg)
+		vmpressure_global(gfp, scanned, critical, reclaimed);
+
+	if (IS_ENABLED(CONFIG_MEMCG))
+		vmpressure_memcg(gfp, memcg, scanned, critical, reclaimed);
+}
+
+/**
+ * vmpressure() - Account memory pressure through scanned/reclaimed ratio
+ * @gfp:	reclaimer's gfp mask
+ * @memcg:	cgroup memory controller handle
+ * @scanned:	number of pages scanned
+ * @reclaimed:	number of pages reclaimed
+ *
+ * This function should be called from the vmscan reclaim path to account
+ * "instantaneous" memory pressure (scanned/reclaimed ratio). The raw
+ * pressure index is then further refined and averaged over time.
+ *
+ * This function does not return any value.
+ */
+void vmpressure(gfp_t gfp, struct mem_cgroup *memcg,
+		unsigned long scanned, unsigned long reclaimed, int order)
+{
+	struct vmpressure *vmpr = &global_vmpressure;
+	unsigned long flags;
 
 	if (order > PAGE_ALLOC_COSTLY_ORDER)
 		return;
@@ -285,94 +411,6 @@ void vmpressure_memcg(gfp_t gfp, struct mem_cgroup *memcg,
 	__vmpressure(gfp, memcg, false, scanned, reclaimed);
 }
 
-void calculate_vmpressure_win(void)
-{
-	long x;
-
-	x = global_page_state(NR_FILE_PAGES) -
-			global_page_state(NR_SHMEM) -
-			total_swapcache_pages() +
-			global_page_state(NR_FREE_PAGES);
-	if (x < 1)
-		x = 1;
-	/*
-	 * For low (free + cached), vmpressure window should be
-	 * small, and high for higher values of (free + cached).
-	 * But it should not be linear as well. This ensures
-	 * timely vmpressure notifications when system is under
-	 * memory pressure, and optimal number of events when
-	 * cached is high. The sqaure root function is empirically
-	 * found to serve the purpose.
-	 */
-	x = int_sqrt(x);
-	vmpressure_win = x;
-}
-
-void vmpressure_global(gfp_t gfp, unsigned long scanned,
-		unsigned long reclaimed)
-{
-	struct vmpressure *vmpr = &global_vmpressure;
-	unsigned long pressure;
-	unsigned long stall;
-
-	if (!(gfp & (__GFP_HIGHMEM | __GFP_MOVABLE | __GFP_IO | __GFP_FS)))
-		return;
-
-	if (!scanned)
-		return;
-
-	spin_lock(&vmpr->sr_lock);
-	if (!vmpr->scanned)
-		calculate_vmpressure_win();
-
-	vmpr->scanned += scanned;
-	vmpr->reclaimed += reclaimed;
-
-	if (!current_is_kswapd())
-		vmpr->stall += scanned;
-
-	stall = vmpr->stall;
-	scanned = vmpr->scanned;
-	reclaimed = vmpr->reclaimed;
-	spin_unlock(&vmpr->sr_lock);
-
-	if (scanned < vmpressure_win)
-		return;
-
-	spin_lock(&vmpr->sr_lock);
-	vmpr->scanned = 0;
-	vmpr->reclaimed = 0;
-	vmpr->stall = 0;
-	spin_unlock(&vmpr->sr_lock);
-
-	pressure = vmpressure_calc_pressure(scanned, reclaimed);
-	pressure = vmpressure_account_stall(pressure, stall, scanned);
-	vmpressure_notify(pressure);
-}
-
-/**
- * vmpressure() - Account memory pressure through scanned/reclaimed ratio
- * @gfp:	reclaimer's gfp mask
- * @memcg:	cgroup memory controller handle
- * @scanned:	number of pages scanned
- * @reclaimed:	number of pages reclaimed
- *
- * This function should be called from the vmscan reclaim path to account
- * "instantaneous" memory pressure (scanned/reclaimed ratio). The raw
- * pressure index is then further refined and averaged over time.
- *
- * This function does not return any value.
- */
-void vmpressure(gfp_t gfp, struct mem_cgroup *memcg,
-		unsigned long scanned, unsigned long reclaimed, int order)
-{
-	if (!memcg)
-		vmpressure_global(gfp, scanned, reclaimed);
-
-	if (IS_ENABLED(CONFIG_MEMCG))
-		vmpressure_memcg(gfp, memcg, scanned, reclaimed);
-}
-
 /**
  * vmpressure_prio() - Account memory pressure through reclaimer priority level
  * @gfp:	reclaimer's gfp mask
@@ -386,8 +424,9 @@ void vmpressure(gfp_t gfp, struct mem_cgroup *memcg,
  */
 void vmpressure_prio(gfp_t gfp, struct mem_cgroup *memcg, int prio, int order)
 {
-    if (order > PAGE_ALLOC_COSTLY_ORDER)
+	if (order > PAGE_ALLOC_COSTLY_ORDER)
 		return;
+
 	/*
 	 * We only use prio for accounting critical level. For more info
 	 * see comment for vmpressure_level_critical_prio variable above.
@@ -513,7 +552,7 @@ void vmpressure_cleanup(struct vmpressure *vmpr)
 	flush_work(&vmpr->work);
 }
 
-int vmpressure_global_init(void)
+static int __init vmpressure_global_init(void)
 {
 	vmpressure_init(&global_vmpressure);
 	return 0;
