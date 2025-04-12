@@ -3943,6 +3943,7 @@ err:
 static void remove_task_from_group(struct task_struct *p)
 {
 	struct related_thread_group *grp = p->grp;
+	struct rq_flags rf;
 	struct rq *rq;
 	int empty_group = 1;
 
@@ -3973,6 +3974,7 @@ static void remove_task_from_group(struct task_struct *p)
 static int
 add_task_to_group(struct task_struct *p, struct related_thread_group *grp)
 {
+    struct rq_flags rf;
 	struct rq *rq;
 
 	raw_spin_lock(&grp->lock);
