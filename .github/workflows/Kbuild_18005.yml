@@ -57,12 +57,10 @@ jobs:
               exit 1
           fi
 
-      - name: Make OPPO R15x/K1 Anykernel3
+      - name: Pack Kernel
         if: env.CHECK_FILE_IS_OK == 'true'
         run: |
-          git clone https://github.com/$GITHUB_REPOSITORY/ -b prebuilt_ak3 --depth 1 $GITHUB_WORKSPACE/workdir/ak3
-          rm -r $GITHUB_WORKSPACE/workdir/ak3/.git
-          cp $GITHUB_WORKSPACE/workdir/source/out/arch/arm64/boot/Image.gz-dtb $GITHUB_WORKSPACE/workdir/ak3
+          cp $GITHUB_WORKSPACE/workdir/source/out/arch/arm64/boot/Image.gz-dtb $GITHUB_WORKSPACE/workdir/source/android/Packer/
 
       - name: Upload OPPO R15x/K1 Kernel
         if: env.CHECK_FILE_IS_OK == 'true'
@@ -75,5 +73,5 @@ jobs:
         if: env.CHECK_FILE_IS_OK == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: AnyKernel3_oppo_sdm660_18005_${{ env.BUILD_TIME }}
-          path: workdir/ak3/*
+          name: AK3&APM_oppo_sdm660_18005_${{ env.BUILD_TIME }}
+          path: workdir/source/android/Packer/*
