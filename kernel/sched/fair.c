@@ -182,7 +182,7 @@ static inline u64
 penalty_scale_mayhalve(u64 delta, struct sched_entity *se, bool half) {
 	u32 score = ((x16*)&se->burst_penalty)->u8[1];
 	if (half) score >>= 1;
-	return mul_u64_u32_shr(delta, prio_to_wmult[score], 22);
+	return mul_u64_u32_shr(delta, sched_prio_to_wmult[score], 22);
 }
 
 #define penalty_scale(delta, se) \
@@ -325,7 +325,7 @@ static void __update_inv_weight(struct load_weight *lw)
  *   OR
  * (delta_exec * (weight * lw->inv_weight)) >> WMULT_SHIFT
  *
- * Either weight := NICE_0_LOAD and lw \e prio_to_wmult[], in which case
+ * Either weight := NICE_0_LOAD and lw \e sched_prio_to_wmult[], in which case
  * we're guaranteed shift stays positive because inv_weight is guaranteed to
  * fit 32 bits, and NICE_0_LOAD gives another 10 bits; therefore shift >= 22.
  *
@@ -380,9 +380,7 @@ static inline struct rq *rq_of(struct cfs_rq *cfs_rq)
 
 static inline struct task_struct *task_of(struct sched_entity *se)
 {
-#ifdef CONFIG_SCHED_DEBUG
-	WARN_ON_ONCE(!entity_is_task(se));
-#endif
+	SCHED_WARN_ON(!entity_is_task(se));
 	return container_of(se, struct task_struct, se);
 }
 
@@ -2517,7 +2515,7 @@ void task_numa_work(struct callback_head *work)
 	unsigned long nr_pte_updates = 0;
 	long pages, virtpages;
 
-	WARN_ON_ONCE(p != container_of(work, struct task_struct, numa_work));
+	SCHED_WARN_ON(p != container_of(work, struct task_struct, numa_work));
 
 	work->next = work; /* protect against double add */
 	/*
@@ -2766,6 +2764,16 @@ static void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
 
 	if (se->on_rq)
 		account_entity_enqueue(cfs_rq, se);
+}
+
+void reweight_task(struct task_struct *p, int prio)
+{
+	struct sched_entity *se = &p->se;
+	struct cfs_rq *cfs_rq = cfs_rq_of(se);
+	struct load_weight *load = &se->load;
+	unsigned long weight = scale_load(sched_prio_to_weight[prio]);
+	reweight_entity(cfs_rq, se, weight);
+	load->inv_weight = sched_prio_to_wmult[prio];
 }
 
 static inline int throttled_hierarchy(struct cfs_rq *cfs_rq);
@@ -6028,7 +6036,7 @@ static void hrtick_start_fair(struct rq *rq, struct task_struct *p)
 	struct sched_entity *se = &p->se;
 	struct cfs_rq *cfs_rq = cfs_rq_of(se);
 
-	WARN_ON(task_rq(p) != rq);
+	SCHED_WARN_ON(task_rq(p) != rq);
 
 	if (rq->cfs.h_nr_running > 1) {
 		u64 slice = sched_slice(cfs_rq, se);
@@ -7390,12 +7398,21 @@ boosted_cpu_util(int cpu)
 static inline unsigned long
 boosted_task_util(struct task_struct *task)
 {
-	unsigned long util = task_util(task);
-	long margin = schedtune_task_margin(task);
+    struct task_struct *p;
+#ifdef CONFIG_UCLAMP_TASK_GROUP
+	unsigned long util = task_util(p);
+	unsigned long util_min = uclamp_eff_value(p, UCLAMP_MIN);
+	unsigned long util_max = uclamp_eff_value(p, UCLAMP_MAX);
+
+	return clamp(util, util_min, util_max);
+#else
+	unsigned long util = task_util(p);
+	long margin = schedtune_task_margin(p);
 
 	trace_sched_boost_task(task, util, margin);
 
 	return util + margin;
+#endif
 }
 
 static unsigned long capacity_spare_wake(int cpu, struct task_struct *p)
@@ -7813,6 +7830,10 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
             }
 #endif
 
+			/* Skip CPUs which do not fit task requirements */
+			if (capacity_of(i) < boosted_task_util(p))
+				continue;
+
 			/*
 			 * p's blocked utilization is still accounted for on prev_cpu
 			 * so prev_cpu will receive a negative bias due to the double
@@ -8095,6 +8116,9 @@ static int select_energy_cpu_brute(struct task_struct *p, int prev_cpu, int sync
 #ifdef CONFIG_CGROUP_SCHEDTUNE
 	boosted = schedtune_task_boost(p) > 0;
 	prefer_idle = schedtune_prefer_idle(p) > 0;
+#elif  CONFIG_UCLAMP_TASK
+	boosted = uclamp_boosted(p);
+	prefer_idle = uclamp_latency_sensitive(p);
 #else
 	boosted = get_sysctl_sched_cfs_boost() > 0;
 	prefer_idle = 0;
@@ -8695,7 +8719,7 @@ static bool yield_to_task_fair(struct rq *rq, struct task_struct *p, bool preemp
  *   W_i,0 = \Sum_j w_i,j                                             (2)
  *
  * Where w_i,j is the weight of the j-th runnable task on cpu i. This weight
- * is derived from the nice value as per prio_to_weight[].
+ * is derived from the nice value as per sched_prio_to_weight[].
  *
  * The weight average is an exponential decay average of the instantaneous
  * weight:
@@ -9604,11 +9628,6 @@ void update_group_capacity(struct sched_domain *sd, int cpu)
 	struct sched_domain *child = sd->child;
 	struct sched_group *group, *sdg = sd->groups;
 	unsigned long capacity, max_capacity, min_capacity;
-	unsigned long interval;
-
-	interval = msecs_to_jiffies(sd->balance_interval);
-	interval = clamp(interval, 1UL, max_load_balance_interval);
-	sdg->sgc->next_update = jiffies + interval;
 
 	if (!child) {
 		update_cpu_capacity(sd, cpu);
@@ -10090,10 +10109,7 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
 		if (local_group) {
 			sds->local = sg;
 			sgs = &sds->local_stat;
-
-			if (env->idle != CPU_NEWLY_IDLE ||
-			    time_after_eq(jiffies, sg->sgc->next_update))
-				update_group_capacity(env->sd, env->dst_cpu);
+			update_group_capacity(env->sd, env->dst_cpu);
 		}
 
 		update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
@@ -12416,6 +12432,10 @@ const struct sched_class fair_sched_class = {
 	.inc_hmp_sched_stats	= inc_hmp_sched_stats_fair,
 	.dec_hmp_sched_stats	= dec_hmp_sched_stats_fair,
 	.fixup_hmp_sched_stats	= fixup_hmp_sched_stats_fair,
+#endif
+
+#ifdef CONFIG_UCLAMP_TASK
+	.uclamp_enabled		= 1,
 #endif
 };
 
