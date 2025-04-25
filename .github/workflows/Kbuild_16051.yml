@@ -82,5 +82,5 @@ jobs:
         if: env.CHECK_FILE_IS_OK == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: android_kernel_file_oppo_sdm660_16051_${{ env.BUILD_TIME }}_Image.gz-dtb
+          name: android_kernel_file_oppo_sdm660_16051_${{ env.BUILD_TIME }}
           path: workdir/source/out/*
