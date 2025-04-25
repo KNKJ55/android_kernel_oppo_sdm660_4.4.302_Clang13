@@ -83,4 +83,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android_kernel_file_oppo_sdm660_16051_${{ env.BUILD_TIME }}
-          path: workdir/source/out/*
+          path: workdir/source/out/arch/arm64/boot/dts/*
