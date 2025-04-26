@@ -57,12 +57,26 @@ jobs:
               exit 1
           fi
 
+      - name: Patch SukiSU Ultra KPM
+        if: env.CHECK_FILE_IS_OK == 'true'
+        run: |
+          mkdir $GITHUB_WORKSPACE/workdir/SukiSU-Patch
+          cd $GITHUB_WORKSPACE/workdir/SukiSU-Patch
+          wget https://github.com/ShirkNeko/SukiSU_KernelPatch_patch/releases/download/0.11-beta/patch_linux
+          cp $GITHUB_WORKSPACE/workdir/source/out/arch/arm64/boot/Image .
+          cp $GITHUB_WORKSPACE/workdir/source/out/arch/arm64/boot/dts/1*/*.dtb .
+          chmod +x patch_linux
+          ./patch_linux
+          mv -f oImage Image
+          gzip -k Image Image.gz
+          cat Image.gz *.dtb > Image.gz-dtb
+
       - name: Make OPPO R11 Anykernel3
         if: env.CHECK_FILE_IS_OK == 'true'
         run: |
           git clone https://github.com/$GITHUB_REPOSITORY/ -b prebuilt_ak3 --depth 1 $GITHUB_WORKSPACE/workdir/ak3
           rm -r $GITHUB_WORKSPACE/workdir/ak3/.git
-          cp $GITHUB_WORKSPACE/workdir/source/out/arch/arm64/boot/Image.gz-dtb $GITHUB_WORKSPACE/workdir/ak3
+          cp $GITHUB_WORKSPACE/workdir/SukiSU-Patch/Image.gz-dtb $GITHUB_WORKSPACE/workdir/ak3
 
       - name: Upload OPPO R11 Kernel
         if: env.CHECK_FILE_IS_OK == 'true'
@@ -77,10 +91,3 @@ jobs:
         with:
           name: AnyKernel3_oppo_sdm660_16051_${{ env.BUILD_TIME }}
           path: workdir/ak3/*
-      
-      - name: Upload OPPO R11 Kernel File
-        if: env.CHECK_FILE_IS_OK == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: android_kernel_file_oppo_sdm660_16051_${{ env.BUILD_TIME }}
-          path: workdir/source/out/arch/arm64/boot/dts/*
