@@ -1,4 +1,4 @@
-CONFIG_LOCALVERSION="-perf"
+CONFIG_LOCALVERSION="-Elysia-Raiden_Mei"
 # CONFIG_LOCALVERSION_AUTO is not set
 # CONFIG_USELIB is not set
 CONFIG_AUDIT=y
@@ -842,6 +842,7 @@ CONFIG_ZRAM_LZ4_COMPRESS=y
 # Wen.Luo@PSW.BSP.Kernel.Driver,2018/12/10, Add for enable crypto lz4 compress for zram lz4 test
 CONFIG_CRYPTO_LZ4=y
 # endif
+CONFIG_CRYPTO_LZO=y
 # ifdef VENDOR_EDIT
 # YiXue.Ge@PSW.BSP.Kernel.Driver,2017/07/03, Add for enable PGTABLE_MAPPING
 CONFIG_PGTABLE_MAPPING=y
