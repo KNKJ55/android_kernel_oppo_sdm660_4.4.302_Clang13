@@ -2315,7 +2315,7 @@ static void get_scan_count(struct lruvec *lruvec, int swappiness,
 	if (!global_reclaim(sc))
 		force_scan = true;
 
-	prepare_workingset_protection(zone, sc);
+	prepare_workingset_protection(zone->zone_pgdat, sc);
 
 	/* If we have no swap space, do not bother scanning anon pages. */
 #ifndef VENDOR_EDIT //yixue.ge@psw.bsp.kernel.driver 20170810 modify for reserver some zram disk size
@@ -3678,7 +3678,7 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int order,
 
 	/* Try to sleep for a short interval */
 	if (prepare_kswapd_sleep(pgdat, order, remaining,
-						classzone_idx, balanced_classzone_idx)) {
+						classzone_idx)) {
 		/*
 		 * Compaction records what page blocks it recently failed to
 		 * isolate pages from and skips them in the future scanning.
@@ -3703,7 +3703,7 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int order,
 	 * go fully to sleep until explicitly woken up.
 	 */
 	if (prepare_kswapd_sleep(pgdat, order, remaining,
-						classzone_idx, balanced_classzone_idx)) {
+						classzone_idx)) {
 		trace_mm_vmscan_kswapd_sleep(pgdat->node_id);
 
 		/*
