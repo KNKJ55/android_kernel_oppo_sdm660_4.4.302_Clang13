@@ -1253,3 +1253,20 @@ source "arch/arm64/crypto/Kconfig"
 endif
 
 source "lib/Kconfig"
+
+menu "OPPO Features"
+
+source "kernel/oppocfs/Kconfig"
+
+config OPPO_FEATURES
+    bool "Enable OPPO Features"
+    select OPPOCFS
+    select OPPO_MEM_MONITOR
+    select OPPO_FG_OPT
+    default y
+    help
+        This option enables all OPPP Features.
+        
+        If unsure, say Y.
+
+endmenu

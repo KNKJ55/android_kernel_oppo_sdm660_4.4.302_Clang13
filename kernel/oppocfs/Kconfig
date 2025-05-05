@@ -1,0 +1,11 @@
+menu "OPPO CFS"
+
+config OPPPCFS
+    bool "OPPO CFS Feature"
+    default y
+    ---help---
+    This option enables OPPO CFS.
+    
+    If unsure, say Y.
+    
+endmenu
