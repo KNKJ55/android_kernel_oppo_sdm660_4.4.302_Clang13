@@ -849,19 +849,6 @@ CONFIG_PGTABLE_MAPPING=y
 #endif
 
 #ifdef VENDOR_EDIT
-#/* Huacai.Zhou@PSW.BSP.Kernel.MM, 2018-07-07, add alloc wait monitor support*/
-CONFIG_OPPO_MEM_MONITOR=y
-CONFIG_OPPO_FG_OPT=y
-#endif /*VENDOR_EDIT*/
-
-#ifdef VENDOR_EDIT
-#wenbin.liu@PSW.BSP.MM, 2018/08/29 Add for CONFIG_OPPO_HEALTHINFO
-CONFIG_OPPO_HEALTHINFO=y
-CONFIG_SLAB_STAT_DEBUG=y
-CONFIG_SLABINFO=y
-#endif /*VENDOR_EDIT*/
-
-#ifdef VENDOR_EDIT
 #yonghui.qin@swdp.shanghai, 2018/11/20, disable module sig feature
 CONFIG_KEYS=y
 CONFIG_INTEGRITY_SIGNATURE=y
@@ -885,4 +872,13 @@ CONFIG_CRYPTO_MANAGER2=y
 #ifdef VENDOR_EDIT
 #/* Kui.Zhang@PSW.BSP.Kernel.Performance, 2018-11-07, add process reclaim.*/
 CONFIG_PROCESS_RECLAIM=y
+#endif
+
+#ifdef VENDOR_EDIT
+#/*KNKJ55@Github,2025-05-06,disable oppp features.*/
+CONFIG_OPPO_FEATURES=n
+CONFIG_OPPOCFS=n
+CONFIG_OPPO_MEM_MONITOR=n
+CONFIG_OPPO_FG_OPT=n
+CONFIG_OPPO_HEALTHINFO=n
 #endif
